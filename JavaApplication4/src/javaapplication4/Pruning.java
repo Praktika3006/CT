@@ -19,7 +19,7 @@ public class Pruning {
     private int V = 0;
     
     
-    public Pruning (int size, float[][][] scene)
+    public Pruning (int size, short[][][] scene)
     {
         sizeSkelet = size;
         SkeletArray(scene);
@@ -31,7 +31,7 @@ public class Pruning {
         return this.skeletArray;
     }
     
-    public void SkeletArray(float[][][] scene)
+    public void SkeletArray(short[][][] scene)
     {
        skeletArray = new ArrayList<Point>();
        for(int z = 0; z < scene.length; z++)
@@ -68,7 +68,7 @@ public class Pruning {
         return -1;
     }
     
-    public boolean[][] ConvertIntoGraph(float[][][] scene)
+    public boolean[][] ConvertIntoGraph(short[][][] scene)
     {
         boolean[][] matrixAdjacency = new boolean[sizeSkelet][sizeSkelet];
         

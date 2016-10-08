@@ -22,6 +22,7 @@ import java.awt.Dimension;
 import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.List;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
@@ -31,6 +32,8 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import javaapplication4.marchingCubes.*;
+import javaapplication4.Objects.*;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -65,7 +68,7 @@ public class Ren implements GLEventListener{
     public void init(GLAutoDrawable drawable) {
          final GL2 gl = drawable.getGL().getGL2();
          
-         gl.glClearColor(0, 0, 0, 1);
+         gl.glClearColor(1, 1, 1, 1);
          gl.glEnable(GL2.GL_DEPTH_TEST);
          gl.glShadeModel(GL2.GL_SMOOTH);
          gl.glEnable(GL2.GL_CULL_FACE);
@@ -118,19 +121,57 @@ public class Ren implements GLEventListener{
     
     public static void main(String[] args) {
         
-        float[][][] arr = JavaApplication4.ReadDICOMDir("/Volumes/WININSTALL/Снимки/BELYANIN A.V/Новая папка");
-         
-
+        short[][][] arr = JavaApplication4.ReadDICOMDir("/Volumes/WININSTALL/Снимки/BELYANIN A.V/Новая папка");
         
-        ArrayList<ArrayList<javaapplication4.Point>> elements = new ArrayList<ArrayList<javaapplication4.Point>>();
-
-
-
-        FatDeleter deleter = new FatDeleter();
-        deleter.DeletePlusXFat(arr, -450, 1000, 10);
-        deleter.DeleteMinusXFat(arr, -450, 1000, 10);
-        deleter.DeletePlusYFat(arr, -450, 1000, 10);
-        deleter.DeleteMinusYFat(arr, -450, 1000, 10);
+        //---------------------СГЛАЖИВАНИЕ--------------------------------------
+        GaussianFilter gf = new GaussianFilter(JavaApplication4.x, 
+                JavaApplication4.y, JavaApplication4.z);
+        short[][][] smoothedScene = gf.applyFilter(arr);
+        //----------------------------------------------------------------------
+        
+        //---------------------ПОИСК 2D УЧАСТКА ТРАХЕИ--------------------------
+        ExtractionOfTrahea extractor = new ExtractionOfTrahea(); 
+        int slice = 0;
+        ArrayList<ArrayList<javaapplication4.Point>> regions = new ArrayList<ArrayList<javaapplication4.Point>>();
+        while(regions.size() == 0 && slice < arr.length) {
+            regions = extractor.findPotentialRegions(smoothedScene, slice, JavaApplication4.x, JavaApplication4.y);
+            slice++;
+        }
+        
+        ArrayList<javaapplication4.Point> trahea2D = null;
+        int maxSize = 0;
+        for(ArrayList<javaapplication4.Point> region: regions) {
+            if(region.size() > maxSize) {
+                trahea2D = region;
+                maxSize = region.size();
+            }
+        }
+        //----------------------------------------------------------------------
+        
+        //------------------------ПРОЦЕДУРА 3D РОСТА ОБЛАСТЕЙ-------------------
+        AirwaySegmentation3D segmentator = new AirwaySegmentation3D(trahea2D.get(0), 
+                JavaApplication4.x,
+                JavaApplication4.y,
+                JavaApplication4.z);
+        
+        ArrayList<javaapplication4.Point> airway3D = segmentator.segmentation(smoothedScene);
+        
+        for(javaapplication4.Point p: airway3D) {
+            smoothedScene[p.GetZ()][p.GetY()][p.GetX()] = 9000;
+        }
+        //----------------------------------------------------------------------
+        
+        
+        
+//        ArrayList<ArrayList<javaapplication4.Point>> elements = new ArrayList<ArrayList<javaapplication4.Point>>();
+//
+//
+//
+//        FatDeleter deleter = new FatDeleter();
+//        deleter.DeletePlusXFat(arr, -450, 1000, 10);
+//        deleter.DeleteMinusXFat(arr, -450, 1000, 10);
+//        deleter.DeletePlusYFat(arr, -450, 1000, 10);
+//        deleter.DeleteMinusYFat(arr, -450, 1000, 10);
         
 //        Extractor e = new Extractor(arr);
 //        char[][][] scene = e.Scene();
@@ -167,23 +208,23 @@ public class Ren implements GLEventListener{
         //////////////////////////////
         
 //                                      Нужно
-//        Skeletonizator sk = new Skeletonizator();
-//        sk.Skeletonization(arr);
-//        Pruning pr = new Pruning(sk.SizeSkelet(), arr);
-//        boolean[][] matrixAdj = pr.ConvertIntoGraph(arr);
-//        ArrayList<javaapplication4.Point> usingPoint = pr.Dijkstra(matrixAdj);
-//        for(javaapplication4.Point i: usingPoint)
-//        {
-//            arr[i.GetZ()][i.GetY()][i.GetX()] = 9998;
-//        }   
-//        for(int z = 0; z < arr.length; z++)
-//            for(int y = 0; y < arr[0].length; y++)
-//                for(int x = 0; x < arr[0][0].length; x++)
-//                    if(arr[z][y][x] == 9999)
-//                    {
-//                        arr[z][y][x] = 9000;
-//                    }
-//        DistanceTransformation dt = new DistanceTransformation(arr);
+        Skeletonizator sk = new Skeletonizator();
+        sk.Skeletonization(smoothedScene);
+        Pruning pr = new Pruning(sk.SizeSkelet(), smoothedScene);
+        boolean[][] matrixAdj = pr.ConvertIntoGraph(smoothedScene);
+        ArrayList<javaapplication4.Point> usingPoint = pr.Dijkstra(matrixAdj);
+        for(javaapplication4.Point i: usingPoint)
+        {
+            smoothedScene[i.GetZ()][i.GetY()][i.GetX()] = 9998;
+        }   
+        for(int z = 0; z < arr.length; z++)
+            for(int y = 0; y < arr[0].length; y++)
+                for(int x = 0; x < arr[0][0].length; x++)
+                    if(smoothedScene[z][y][x] > 9000)
+                    {
+                        smoothedScene[z][y][x] = 9000;
+                    }
+        DistanceTransformation dt = new DistanceTransformation(smoothedScene);
         
         
         
@@ -220,8 +261,7 @@ public class Ren implements GLEventListener{
         int STEPY = 1;
         int STEPZ = 1;
 
-        int BOTTOM_LIMIT = -900;
-        int TOP_LIMIT = -500;
+
 
         int zl = arr.length / 2;
         int yl = arr[0].length / 2;
@@ -230,135 +270,88 @@ public class Ren implements GLEventListener{
         verteces = new ArrayList<Float>();
         colors = new ArrayList<Float>();
         
- 
+        //int z = 150;
         for(int z = 0; z < arr.length; z++)
-        //int z = 40;
             for(int y = 0; y < arr[0].length; y++)
                 for(int x = 0; x < arr[0][0].length; x++)
-                    if(arr[z][y][x] > 200)
+                    if(smoothedScene[z][y][x] == 9988)
                         {
                            verteces.add(1.0f / xl * (x - xl));
                            verteces.add(1.0f / yl * (y - yl));
                            verteces.add(1.0f / zl * (z - zl));
-                           colors.add((float)(255.0 / 255.0));
-                           colors.add((float)(255.0 / 255.0));
-                           colors.add((float)(255.0 / 255.0));
+                           
+//                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+//                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+//                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+                           
+                           colors.add((float)(0.0 / 255.0));
+                           colors.add((float)(0.0 / 255.0));
+                           colors.add((float)(0.0 / 255.0));
                         }
 
-//        for(int z = 0; z < arr.length; z++)
-//            for(int y = 0; y < arr[0].length; y++)
-//                for(int x = 0; x < arr[0][0].length; x++)
-//                    if(arr[z][y][x] == 9988)
-//                        {
-//                           verteces.add(1.0f / xl * (x - xl));
-//                           verteces.add(1.0f / yl * (y - yl));
-//                           verteces.add(1.0f / zl * (z - zl));
-//                           colors.add((float)(255.0 / 255.0));
-//                           colors.add((float)(0.0 / 255.0));
-//                           colors.add((float)(0.0 / 255.0));
-//                        }
         
         
+//        final short BOTTOM_LIMIT = 2000;
+//        final short TOP_LIMIT = 10000;
+//        ArrayList<IVariant> varians = new ArrayList<IVariant>();
+//        varians.add(new Variant0());
+//        varians.add(new Variant1());
+//        
+//        for(int z = 0; z < arr.length - 2; z++)
+//            for(int y = 0; y < arr[0].length - 2; y++)
+//                for(int x = 0; x < arr[0][0].length - 2; x++) {
+//                    String str = "00000000";
+//                    
+//                    short v1 = smoothedScene[z][y][x];
+//                    if(v1 > BOTTOM_LIMIT && v1 < TOP_LIMIT) {
+//                        str = "1" + str.substring(1);
+//                    }
+//                    
+//                    short v2 = smoothedScene[z][y][x + 1];
+//                    if(v2 > BOTTOM_LIMIT && v2 < TOP_LIMIT) {
+//                        str = str.charAt(0) + "1" + str.substring(2);
+//                    }
+//                    
+//                    short v3 = smoothedScene[z][y + 1][x + 1];
+//                    if(v3 > BOTTOM_LIMIT && v3 < TOP_LIMIT) {
+//                        str = str.substring(0,1) + "1" + str.substring(3);
+//                    }
+//                    
+//                    short v4 = smoothedScene[z][y + 1][x];
+//                    if(v3 > BOTTOM_LIMIT && v3 < TOP_LIMIT) {
+//                        str = str.substring(0,2) + "1" + str.substring(4);
+//                    }
+//                    
+//                    short v5 = smoothedScene[z + 1][y][x];
+//                    if(v5 > BOTTOM_LIMIT && v5 < TOP_LIMIT) {
+//                        str = str.substring(0, 3) + "1" + str.substring(5);
+//                    }
+//                    
+//                    short v6 = smoothedScene[z + 1][y][x + 1];
+//                    if(v6 > BOTTOM_LIMIT && v6 < TOP_LIMIT) {
+//                        str = str.substring(0, 4) + "1" + str.substring(6);
+//                    }
+//                    
+//                    short v7 = smoothedScene[z + 1][y + 1][x + 1];
+//                    if(v7 > BOTTOM_LIMIT && v7 < TOP_LIMIT) {
+//                        str = str.substring(0,5) + "1" + str.charAt(7);
+//                    }
+//                    
+//                    short v8 = smoothedScene[z + 1][y + 1][x];
+//                    if(v8 > BOTTOM_LIMIT && v8 < TOP_LIMIT) {
+//                        str = str.substring(0,6) + "1";
+//                    }
+//                    
+//                    Triangle[] polygons = new Triangle[0];
+//                    Triangle[] finalPolygons = new Triangle[0];
+//                    for(IVariant variant : varians) {
+//                        polygons = variant.chose(str, 
+//                                new javaapplication4.Objects.Point(x, y, z, 100));
+//                        System.arraycopy(polygons, 0, finalPolygons, finalPolygons.length, polygons.length);
+//                    }
+//                }
         
         
-        
-        
-        
-        
-        
-        
-        
-         
-//         for(javaapplication4.Point p : elem)
-//            {
-//               verteces.add(1.0f / xl * (p.GetX() - xl));
-//               verteces.add(1.0f / yl * (p.GetY() - yl));
-//               verteces.add(1.0f / zl * (p.GetZ() - zl));
-//               colors.add((float)(255.0 / 255.0));
-//               colors.add((float)(255.0 / 255.0));
-//               colors.add((float)(255.0 / 255.0));
-//            }
-//         
-//         ArrayList<javaapplication4.Point> newArr = null;
-//
-//
-//         
-//         for(int i = 0; i < elements.size(); i++)
-//         {
-//            newArr = elements.get(i);
-//         
-//            for(javaapplication4.Point p : newArr)
-//            {
-//               verteces.add(1.0f / xl * (p.GetX() - xl));
-//               verteces.add(1.0f / yl * (p.GetY() - yl));
-//               verteces.add(1.0f / zl * (p.GetZ() - zl));
-//               colors.add((float)(253.0 / 255.0));
-//               colors.add((float)(189.0 / 255.0));
-//               colors.add((float)(63.0 / 255.0));
-//            }
-//         }
-//         
-//         elements = new ArrayList<ArrayList<javaapplication4.Point>>();
-//         counter = arr.length / 4;
-//         
-////         elements = me.Labeling2D(arr[counter], -900, -500, counter);
-////         elements = me.LungExtracting2D(elements);
-//         
-//         while(elements.size() == 0)
-//         {
-//            elements = me.Labeling2D(arr[counter], -900, -500, counter);
-//            elements = me.LungExtraction3D(arr, elements, -900, -500);
-//            counter++;
-//         }
-//         
-//         for(javaapplication4.Point point : elements.get(0))
-//         {
-//             arr[point.GetZ()][point.GetY()][point.GetX()] = 9989;
-//         }
-//         
-//         for(javaapplication4.Point point : elements.get(1))
-//         {
-//             arr[point.GetZ()][point.GetY()][point.GetX()] = 9988;
-//         }
-//         
-//         elements.clear();
-//         
-//         elements.add(me.ShellSelection(arr, 9989));
-//         elements.add(me.ShellSelection(arr, 9988));
-//         
-//         
-//         for(int i = 0; i < elements.size(); i++)
-//         {
-//             newArr = elements.get(i);
-//         
-//            for(javaapplication4.Point p : newArr)
-//            {
-//               verteces.add(1.0f / xl * (p.GetX() - xl));
-//               verteces.add(1.0f / yl * (p.GetY() - yl));
-//               verteces.add(1.0f / zl * (p.GetZ() - zl));
-//               colors.add((float)(112.0 / 255.0));
-//               colors.add((float)(183.0 / 255.0));
-//               colors.add((float)(184.0 / 255.0));
-//            }
-//         }
-//         
-//         ArrayList<javaapplication4.Point> elem = new ArrayList<javaapplication4.Point>();
-//         
-//         for(int z = 0; z < arr.length; z++)
-//             for(int y = 0; y < arr[0].length; y++)
-//                 for(int x = 0; x < arr[0][0].length; x++)
-//                     if(arr[z][y][x] > -1100 &&  arr[z][y][x] < -950)
-//                         elem.add(new javaapplication4.Point(x, y, z));
-//         
-//         for(javaapplication4.Point p : elem)
-//            {
-//               verteces.add(1.0f / xl * (p.GetX() - xl));
-//               verteces.add(1.0f / yl * (p.GetY() - yl));
-//               verteces.add(1.0f / zl * (p.GetZ() - zl));
-//               colors.add((float)(255.0 / 255.0));
-//               colors.add((float)(255.0 / 255.0));
-//               colors.add((float)(255.0 / 255.0));
-//            }
          
 
         vertex_data = Buffers.newDirectFloatBuffer(verteces.size());
@@ -369,8 +362,6 @@ public class Ren implements GLEventListener{
             vertex_data.put(verteces.get(i));
             color_data.put(colors.get(i));
         }
-        
-        System.out.println(verteces.size());
 
 
         vertex_data.rewind();

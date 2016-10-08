@@ -19,7 +19,7 @@ public class DistanceTransformation {
     private int B = 9995;
     private int m = 9994;
     
-    public DistanceTransformation(float[][][] scene)
+    public DistanceTransformation(short[][][] scene)
     {
         this.distanceScene = new int[scene.length][scene[0].length][scene[0][0].length]; 
         this.FindRoot(scene);
@@ -51,40 +51,28 @@ public class DistanceTransformation {
                     this.ComputingBackwardDistance(x, y, z, scene, this.distanceScene);
                 }
         
-      
-        for(int i = 0; i < 4; i++)
-        {
-            System.out.println("Создание карты скелета");
-            this.SkeletalDistanceMap(scene, 0);
-            System.out.println("Вычисление расстояний в скелете");
-            this.DistancePropagation(scene);
-            System.out.println("Удаление ветвей");
-            this.BranchDeletion(scene, 15);
-        }
-        for(int i = 0; i < 4; i++)
-        {
-            System.out.println("Создание карты скелета");
-            this.SkeletalDistanceMap(scene, 5);
-            System.out.println("Вычисление расстояний в скелете");
-            this.DistancePropagation(scene);
-            System.out.println("Удаление ветвей");
-            this.BranchDeletion(scene, 20);
-        }
-      
-        for(int i = 0; i < 4; i++)
-        {
-            System.out.println("Создание карты скелета");
-            this.SkeletalDistanceMap(scene, 10);
-            System.out.println("Вычисление расстояний в скелете");
-            this.DistancePropagation(scene);
-            System.out.println("Удаление ветвей");
-            this.BranchDeletion(scene, 200);
-        }
+        int t1 = 100;
+        int td = 100;
+        
+        this.SkeletalDistanceMap(scene, 0);
+        this.DistancePropagation(scene);
+        this.BranchDeletion(scene, t1);
+         
+//        for(int i = 0; i < 4; i++)
+//        {
+//            System.out.println("Создание карты скелета");
+//            this.SkeletalDistanceMap(scene, 0);
+//            System.out.println("Вычисление расстояний в скелете");
+//            this.DistancePropagation(scene);
+//            System.out.println("Удаление ветвей");
+//            this.BranchDeletion(scene, 15);
+//        }
+
    
 
     }
     
-    private void FindRoot(float[][][] scene)
+    private void FindRoot(short[][][] scene)
     {
         for(int z = 0; z < scene.length; z++)
             for(int y = 0; y < scene[0].length; y++)
@@ -98,7 +86,7 @@ public class DistanceTransformation {
     
     
     
-    private boolean IsDeletableLinePoint(int ox, int oy, int oz, float[][][] scene)
+    private boolean IsDeletableLinePoint(int ox, int oy, int oz, short[][][] scene)
     {
         if(this.IsEndpoint(ox, oy, oz, scene) || this.IsBranchPoint(ox, oy, oz, scene))
             return false;
@@ -154,7 +142,7 @@ public class DistanceTransformation {
             return false;       
     }
     
-    private boolean IsDeletableBranchPoint(int ox, int oy, int oz, float[][][] scene)
+    private boolean IsDeletableBranchPoint(int ox, int oy, int oz, short[][][] scene)
     {
         if(!this.IsBranchPoint(ox, oy, oz, scene))
             return false;
@@ -231,7 +219,7 @@ public class DistanceTransformation {
             return false;
     }
     
-    private void ComputingForwardDistance(int xo, int yo, int zo, float[][][] b, int[][][] distanceMap)
+    private void ComputingForwardDistance(int xo, int yo, int zo, short[][][] b, int[][][] distanceMap)
     {
         int[] sum = new int[14];
         
@@ -316,7 +304,7 @@ public class DistanceTransformation {
     }
     
     
-    private void ComputingBackwardDistance(int xo, int yo, int zo, float[][][] b, int[][][] distanceMap)
+    private void ComputingBackwardDistance(int xo, int yo, int zo, short[][][] b, int[][][] distanceMap)
     {
         int[] sum = new int[14];
         
@@ -408,7 +396,7 @@ public class DistanceTransformation {
         return this.distanceScene;
     }
     
-    private boolean IsEndpoint(int ox, int oy, int oz, float[][][] scene)
+    private boolean IsEndpoint(int ox, int oy, int oz, short[][][] scene)
     {
         int minX = 0, minY = 0, minZ = 0, maxX = 0, maxY = 0, maxZ = 0;
         
@@ -458,7 +446,7 @@ public class DistanceTransformation {
     }
     
     
-    private boolean IsBranchPoint(int ox, int oy, int oz, float[][][] scene)
+    private boolean IsBranchPoint(int ox, int oy, int oz, short[][][] scene)
     {
         int minX = 0, minY = 0, minZ = 0, maxX = 0, maxY = 0, maxZ = 0;
         
@@ -508,7 +496,7 @@ public class DistanceTransformation {
     }
     
     
-    private boolean Is0Point(int ox, int oy, int oz, int td, float[][][] scene)
+    private boolean Is0Point(int ox, int oy, int oz, int td, short[][][] scene)
     {
         if(this.IsBranchPoint(ox, oy, oz, scene) 
                 && this.distanceScene[oz][oy][ox] >= td)
@@ -518,7 +506,7 @@ public class DistanceTransformation {
         return false;
     }
     
-    private boolean IsBPoint(int ox, int oy, int oz, int td, float[][][] scene)
+    private boolean IsBPoint(int ox, int oy, int oz, int td, short[][][] scene)
     {
         if(this.IsBranchPoint(ox, oy, oz, scene) 
                 && this.distanceScene[oz][oy][ox] < td)
@@ -536,7 +524,7 @@ public class DistanceTransformation {
         return false;            
     }
     
-    private void SkeletalDistanceMap(float[][][] scene, int td)
+    private void SkeletalDistanceMap(short[][][] scene, int td)
     {
         this.skeletalDistanceMap = new int[scene.length][scene[0].length][scene[0][0].length];
         
@@ -563,7 +551,7 @@ public class DistanceTransformation {
                 }
     }
     
-    public void DistancePropagation(float[][][] scene)
+    public void DistancePropagation(short[][][] scene)
     {
         for(int i = 0; i < 3; i++) {
         for(int z = 0; z < scene.length; z++)
@@ -585,7 +573,7 @@ public class DistanceTransformation {
     }
     
     
-    public void BranchDeletion(float[][][] scene, int t1)
+    public void BranchDeletion(short[][][] scene, int t1)
     {
         for(int i = t1; i >= 0; i--)
         {

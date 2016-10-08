@@ -23,7 +23,7 @@ public class Skeletonizator {
         return this.sizeSkelet;
     }
     
-    public void Skeletonization(float[][][] scene)
+    public void Skeletonization(short[][][] scene)
     {
         boolean[][][] binaryScene = new boolean[scene.length][scene[0].length][scene[0][0].length];
         

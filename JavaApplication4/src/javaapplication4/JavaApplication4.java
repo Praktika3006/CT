@@ -15,18 +15,16 @@ import org.dcm4che2.data.*;
 import org.dcm4che2.imageio.plugins.dcm.*;
 import org.dcm4che2.io.*;
 import org.dcm4che2.tool.dcmqr.*;
+import org.dcm4che2.data.Tag;
 import java.lang.*;
 
 
 public class JavaApplication4 {
 
-    /**
-     * @param args the command line arguments
-     */
-//    public static void main(String[] args) {
-//        float[][][] arr = ReadDICOMDir("/Volumes/WININSTALL/Снимки/Tishenko/Tishenko O.V");
-//             
-//    }
+    public static float x;
+    public static float y;
+    public static float z;
+    
     
     public static DicomObject GetDicomObject(File file)
     {
@@ -60,6 +58,10 @@ public class JavaApplication4 {
         short[] pixelData = dcmObj.getShorts(Tag.PixelData);
         short pixelRepresentation = (short)dcmObj.getInt(Tag.PixelRepresentation);
         
+        
+        
+        
+        
         int columnNumber = dcmObj.getInt(Tag.Columns);
         int rowsNumber = dcmObj.getInt(Tag.Rows);
         
@@ -79,7 +81,7 @@ public class JavaApplication4 {
         return convertedValues;
     }
     
-    public static float[][][] ReadDICOMDir(String dirName)
+    public static short[][][] ReadDICOMDir(String dirName)
     {
         File myFolder = new File(dirName);
         File[] files = myFolder.listFiles(new FilenameFilter(){
@@ -88,10 +90,31 @@ public class JavaApplication4 {
             }
         });
         
+        DicomObject dcmObj = GetDicomObject(files[0]);
+        
+        float[] pixelSpacing = dcmObj.getFloats(Tag.PixelSpacing);
+        x = pixelSpacing[0];
+        y = pixelSpacing[1];
+        z = dcmObj.getFloat(Tag.SliceThickness);
+        
+        
         float[][][] dicomData = null;
+        int count = 0;
+        int xSize = 0;
+        int ySize = 0;
         for (int i = 0; i < files.length; i++)
         {
-            float [][] arr2 = ReadDICOMFile(GetDicomObject(files[i]));
+            dcmObj = GetDicomObject(files[i]);
+            pixelSpacing = dcmObj.getFloats(Tag.PixelSpacing);
+            float zpix = dcmObj.getFloat(Tag.SliceThickness);
+            if(x != pixelSpacing[0] || y != pixelSpacing[1] || z !=zpix)
+                break;    
+            
+            count++;
+            
+            float [][] arr2 = ReadDICOMFile(dcmObj);
+            xSize = arr2[0].length;
+            ySize = arr2.length;
             if (i == 0)
             {
                 dicomData = new float[files.length][arr2.length][arr2[0].length];
@@ -101,7 +124,14 @@ public class JavaApplication4 {
                     dicomData[i][j][k] = arr2[j][k];
         }
         
-        return dicomData;
+        short[][][] dicomData1 = new short[count][ySize][xSize];
+        
+        for(int i = 0; i < count; i++)
+            for (int j = 0; j<ySize; j++)
+                for (int k = 0; k<xSize; k++)
+                    dicomData1[i][j][k] = (short)dicomData[i][j][k];
+        
+        return dicomData1;
     }
     
 }
