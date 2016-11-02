@@ -6,6 +6,7 @@
 package javaapplication4;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  *
@@ -37,7 +38,7 @@ public class Pruning {
        for(int z = 0; z < scene.length; z++)
             for(int y = 0; y < scene[0].length; y++)
                 for(int x = 0; x < scene[0][0].length; x++)
-                    if (scene[z][y][x]==9999)
+                    if (scene[z][y][x] == 9999)
                     {
                         skeletArray.add(new Point(x,y,z));
                     }      
@@ -45,14 +46,15 @@ public class Pruning {
     
     public void FindLeafs(boolean[][] matrixAdjacency)
     {
-        for(int i=0;i<matrixAdjacency.length;i++)
+        for(int i=0; i < matrixAdjacency.length; i++)
         {
             int count = 0;
             for (int j=0;j<matrixAdjacency.length;j++)
             {
-                if (matrixAdjacency[i][j]==true) count++;
+                if (matrixAdjacency[i][j] == true) count++;
             }
             if (count == 1) leafs.add(i);
+            if (count == 0) System.out.println("Ahtung!!!");
         }
     }
     
@@ -421,9 +423,9 @@ public class Pruning {
         return min_index;
     }
     
-     public ArrayList<Point> Dijkstra(boolean[][] matrixAdjacency)
+     public HashSet<Point> Dijkstra(boolean[][] matrixAdjacency)
      {
-         ArrayList<Point> res = new ArrayList<Point>();
+         HashSet<Point> res = new HashSet<Point>();
          FindLeafs(matrixAdjacency);
          int[] dist = new int[V];
          boolean[] sptSet = new boolean[V];

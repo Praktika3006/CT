@@ -32,6 +32,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import javaapplication4.marchingCubes.*;
 import javaapplication4.Objects.*;
 import javax.swing.JFrame;
@@ -68,7 +69,7 @@ public class Ren implements GLEventListener{
     public void init(GLAutoDrawable drawable) {
          final GL2 gl = drawable.getGL().getGL2();
          
-         gl.glClearColor(1, 1, 1, 1);
+         gl.glClearColor(0, 0, 0, 1);
          gl.glEnable(GL2.GL_DEPTH_TEST);
          gl.glShadeModel(GL2.GL_SMOOTH);
          gl.glEnable(GL2.GL_CULL_FACE);
@@ -121,8 +122,25 @@ public class Ren implements GLEventListener{
     
     public static void main(String[] args) {
         
-        short[][][] arr = JavaApplication4.ReadDICOMDir("/Volumes/WININSTALL/Снимки/BELYANIN A.V/Новая папка");
+        short[][][] arr = JavaApplication4.ReadDICOMDir("/Volumes/WININSTALL/Snim/Antropova/Antropova M.P/Ser3");
         
+//        Thresholding t = new Thresholding();
+//        int threshold = t.GetThreshold(arr);
+//        
+//        boolean[][][] thresholdedVolume = new boolean[arr.length][arr[0].length][arr[0][0].length];
+//        for(int z = 0; z < arr.length; z++)
+//            for(int y = 0; y < arr[0].length; y++)
+//                for(int x = 0; x < arr[0][0].length; x++)
+//                    if(arr[z][y][x] < threshold) {
+//                        thresholdedVolume[z][y][x] = true;
+//                    }
+//        
+//        LungsExtracting extractor = new LungsExtracting();
+//        boolean[][][] lungs = extractor.extract(thresholdedVolume);
+//        
+//        HoleFilling  hf = new HoleFilling();
+//        hf.fillHoles(lungs);
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //---------------------СГЛАЖИВАНИЕ--------------------------------------
         GaussianFilter gf = new GaussianFilter(JavaApplication4.x, 
                 JavaApplication4.y, JavaApplication4.z);
@@ -160,6 +178,8 @@ public class Ren implements GLEventListener{
             smoothedScene[p.GetZ()][p.GetY()][p.GetX()] = 9000;
         }
         //----------------------------------------------------------------------
+        
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         
         
@@ -206,13 +226,13 @@ public class Ren implements GLEventListener{
 //        tf.FillScene(me.GetToptraheaIntens());
 //        arr = tf.GetNewScene();
         //////////////////////////////
-        
+       //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++== 
 //                                      Нужно
         Skeletonizator sk = new Skeletonizator();
         sk.Skeletonization(smoothedScene);
         Pruning pr = new Pruning(sk.SizeSkelet(), smoothedScene);
         boolean[][] matrixAdj = pr.ConvertIntoGraph(smoothedScene);
-        ArrayList<javaapplication4.Point> usingPoint = pr.Dijkstra(matrixAdj);
+        HashSet<javaapplication4.Point> usingPoint = pr.Dijkstra(matrixAdj);
         for(javaapplication4.Point i: usingPoint)
         {
             smoothedScene[i.GetZ()][i.GetY()][i.GetX()] = 9998;
@@ -220,11 +240,15 @@ public class Ren implements GLEventListener{
         for(int z = 0; z < arr.length; z++)
             for(int y = 0; y < arr[0].length; y++)
                 for(int x = 0; x < arr[0][0].length; x++)
-                    if(smoothedScene[z][y][x] > 9000)
+                    if(smoothedScene[z][y][x] == 9999)
                     {
                         smoothedScene[z][y][x] = 9000;
                     }
-        DistanceTransformation dt = new DistanceTransformation(smoothedScene);
+        DistanceTransformation dt = new DistanceTransformation(smoothedScene); // Здесь Происходит удаление ненужных ветвей
+        
+        Smoothing smoo = new Smoothing();
+        smoo.smooth(smoothedScene);
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         
         
@@ -270,11 +294,11 @@ public class Ren implements GLEventListener{
         verteces = new ArrayList<Float>();
         colors = new ArrayList<Float>();
         
-        //int z = 150;
+        //int z = 190;
         for(int z = 0; z < arr.length; z++)
             for(int y = 0; y < arr[0].length; y++)
                 for(int x = 0; x < arr[0][0].length; x++)
-                    if(smoothedScene[z][y][x] == 9988)
+                    if(smoothedScene[z][y][x] == 9998)
                         {
                            verteces.add(1.0f / xl * (x - xl));
                            verteces.add(1.0f / yl * (y - yl));
@@ -284,10 +308,29 @@ public class Ren implements GLEventListener{
 //                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
 //                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
                            
-                           colors.add((float)(0.0 / 255.0));
-                           colors.add((float)(0.0 / 255.0));
-                           colors.add((float)(0.0 / 255.0));
+                           colors.add((float)(255.0 / 255.0));
+                           colors.add((float)(255.0 / 255.0));
+                           colors.add((float)(255.0 / 255.0));
                         }
+        
+        //int z = 150;
+//        for(int z = 0; z < arr.length; z++)
+//            for(int y = 0; y < arr[0].length; y++)
+//                for(int x = 0; x < arr[0][0].length; x++)
+//                    if(smoothedScene[z][y][x] == 9998)
+//                        {
+//                           verteces.add(1.0f / xl * (x - xl));
+//                           verteces.add(1.0f / yl * (y - yl));
+//                           verteces.add(1.0f / zl * (z - zl));
+//                           
+////                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+////                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+////                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+//                           
+//                           colors.add((float)(255.0 / 255.0));
+//                           colors.add((float)(255.0 / 255.0));
+//                           colors.add((float)(255.0 / 255.0));
+//                        }
 
         
         
