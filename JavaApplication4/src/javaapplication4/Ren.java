@@ -33,6 +33,7 @@ import java.awt.event.MouseWheelListener;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import javaapplication4.marchingCubes.*;
 import javaapplication4.Objects.*;
 import javax.swing.JFrame;
@@ -54,11 +55,15 @@ public class Ren implements GLEventListener{
     
     private static GLCanvas glcanvas = null;
     
-    private static ArrayList<Float> verteces = null;
+    private static float[] verteces = null;
     private static FloatBuffer vertex_data = null;
     
-    private static ArrayList<Float> colors = null;
+    private static LinkedList<Float> colors = null;
     private static FloatBuffer color_data = null;
+    
+    private static float[] normals = null;
+    private static FloatBuffer normal_data = null;
+    
     
     private GLU glu = new GLU();
     
@@ -75,6 +80,22 @@ public class Ren implements GLEventListener{
          gl.glEnable(GL2.GL_CULL_FACE);
          gl.glPolygonMode(GL2.GL_FRONT, GL2.GL_FILL);
          gl.glEnable(GL2.GL_NORMALIZE);
+         
+         float[] light0_position = {1.0f, 1.0f, 1.0f, 0.0f};
+         float[] light1_position = {-1.0f, -1.0f, -1.0f, 0.0f};
+         float[] light2_position = {-1.0f, 1.0f, -1.0f, 0.0f};
+         float[] light3_position = {1.0f, -1.0f, 1.0f, 0.0f};
+         
+         gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_POSITION, Buffers.newDirectFloatBuffer(light0_position));
+         gl.glLightfv(GL2.GL_LIGHT1, GL2.GL_POSITION, Buffers.newDirectFloatBuffer(light1_position));
+         gl.glLightfv(GL2.GL_LIGHT2, GL2.GL_POSITION, Buffers.newDirectFloatBuffer(light2_position));
+         gl.glLightfv(GL2.GL_LIGHT3, GL2.GL_POSITION, Buffers.newDirectFloatBuffer(light3_position));
+         
+         gl.glEnable(GL2.GL_LIGHTING);
+         gl.glEnable(GL2.GL_LIGHT0);
+         gl.glEnable(GL2.GL_LIGHT1);
+         gl.glEnable(GL2.GL_LIGHT2);
+         gl.glEnable(GL2.GL_LIGHT3);
          
     }
 
@@ -98,12 +119,29 @@ public class Ren implements GLEventListener{
         
         //gl.glColor3f(1.0f, 1.0f, 1.0f);
         gl.glVertexPointer(3, GL.GL_FLOAT, 0, vertex_data);
-        gl.glColorPointer(3, GL.GL_FLOAT, 0, color_data);
+        //gl.glColorPointer(3, GL.GL_FLOAT, 0, color_data);
+        gl.glNormalPointer(GL.GL_FLOAT, 0, normal_data);
         
         gl.glEnableClientState(GL2.GL_VERTEX_ARRAY);
-        gl.glEnableClientState(GL2.GL_COLOR_ARRAY);
-        gl.glDrawArrays(GL2.GL_POINTS, 0, verteces.size() / 3);
-        gl.glDisableClientState(GL2.GL_COLOR_ARRAY);
+        //gl.glEnableClientState(GL2.GL_COLOR_ARRAY);
+        gl.glEnableClientState(GL2.GL_NORMAL_ARRAY);
+        float[] mat_specular = {1.0f / 255.0f * 238.0f, 
+            1.0f / 255.0f * 238.0f, 
+            1.0f / 255.0f * 224.0f,
+            1.0f};
+        float[] mat_ambient = {1.0f / 255.0f * 208.0f, 
+            1.0f / 255.0f * 208.0f, 
+            1.0f / 255.0f * 194.0f,
+            1.0f};
+        float[] mat_shininess = {50.0f};
+        gl.glMaterialfv(GL.GL_FRONT, GL2.GL_SPECULAR, Buffers.newDirectFloatBuffer(mat_specular));
+        gl.glMaterialfv(GL.GL_FRONT, GL2.GL_AMBIENT, Buffers.newDirectFloatBuffer(mat_ambient));
+        gl.glMaterialfv(GL.GL_FRONT, GL2.GL_SHININESS, Buffers.newDirectFloatBuffer(mat_shininess));
+        //gl.glDrawArrays(GL2.GL_POINTS, 0, verteces.size() / 3);
+        gl.glDrawArrays(GL2.GL_TRIANGLES, 0, verteces.length / 3);
+        
+        //gl.glDisableClientState(GL2.GL_COLOR_ARRAY);
+        gl.glDisableClientState(GL2.GL_NORMAL_ARRAY);
         gl.glDisableClientState(GL2.GL_VERTEX_ARRAY);
         
         gl.glFlush();
@@ -142,41 +180,41 @@ public class Ren implements GLEventListener{
 //        hf.fillHoles(lungs);
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //---------------------СГЛАЖИВАНИЕ--------------------------------------
-        GaussianFilter gf = new GaussianFilter(JavaApplication4.x, 
-                JavaApplication4.y, JavaApplication4.z);
-        short[][][] smoothedScene = gf.applyFilter(arr);
+//        GaussianFilter gf = new GaussianFilter(JavaApplication4.x, 
+//                JavaApplication4.y, JavaApplication4.z);
+//        short[][][] smoothedScene = gf.applyFilter(arr);
         //----------------------------------------------------------------------
-        
-        //---------------------ПОИСК 2D УЧАСТКА ТРАХЕИ--------------------------
-        ExtractionOfTrahea extractor = new ExtractionOfTrahea(); 
-        int slice = 0;
-        ArrayList<ArrayList<javaapplication4.Point>> regions = new ArrayList<ArrayList<javaapplication4.Point>>();
-        while(regions.size() == 0 && slice < arr.length) {
-            regions = extractor.findPotentialRegions(smoothedScene, slice, JavaApplication4.x, JavaApplication4.y);
-            slice++;
-        }
-        
-        ArrayList<javaapplication4.Point> trahea2D = null;
-        int maxSize = 0;
-        for(ArrayList<javaapplication4.Point> region: regions) {
-            if(region.size() > maxSize) {
-                trahea2D = region;
-                maxSize = region.size();
-            }
-        }
-        //----------------------------------------------------------------------
-        
-        //------------------------ПРОЦЕДУРА 3D РОСТА ОБЛАСТЕЙ-------------------
-        AirwaySegmentation3D segmentator = new AirwaySegmentation3D(trahea2D.get(0), 
-                JavaApplication4.x,
-                JavaApplication4.y,
-                JavaApplication4.z);
-        
-        ArrayList<javaapplication4.Point> airway3D = segmentator.segmentation(smoothedScene);
-        
-        for(javaapplication4.Point p: airway3D) {
-            smoothedScene[p.GetZ()][p.GetY()][p.GetX()] = 9000;
-        }
+//        
+//        //---------------------ПОИСК 2D УЧАСТКА ТРАХЕИ--------------------------
+//        ExtractionOfTrahea extractor = new ExtractionOfTrahea(); 
+//        int slice = 0;
+//        ArrayList<ArrayList<javaapplication4.Point>> regions = new ArrayList<ArrayList<javaapplication4.Point>>();
+//        while(regions.size() == 0 && slice < arr.length) {
+//            regions = extractor.findPotentialRegions(smoothedScene, slice, JavaApplication4.x, JavaApplication4.y);
+//            slice++;
+//        }
+//        
+//        ArrayList<javaapplication4.Point> trahea2D = null;
+//        int maxSize = 0;
+//        for(ArrayList<javaapplication4.Point> region: regions) {
+//            if(region.size() > maxSize) {
+//                trahea2D = region;
+//                maxSize = region.size();
+//            }
+//        }
+//        //----------------------------------------------------------------------
+//        
+//        //------------------------ПРОЦЕДУРА 3D РОСТА ОБЛАСТЕЙ-------------------
+//        AirwaySegmentation3D segmentator = new AirwaySegmentation3D(trahea2D.get(0), 
+//                JavaApplication4.x,
+//                JavaApplication4.y,
+//                JavaApplication4.z);
+//        
+//        ArrayList<javaapplication4.Point> airway3D = segmentator.segmentation(smoothedScene);
+//        
+//        for(javaapplication4.Point p: airway3D) {
+//            smoothedScene[p.GetZ()][p.GetY()][p.GetX()] = 9000;
+//        }
         //----------------------------------------------------------------------
         
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -228,26 +266,26 @@ public class Ren implements GLEventListener{
         //////////////////////////////
        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++== 
 //                                      Нужно
-        Skeletonizator sk = new Skeletonizator();
-        sk.Skeletonization(smoothedScene);
-        Pruning pr = new Pruning(sk.SizeSkelet(), smoothedScene);
-        boolean[][] matrixAdj = pr.ConvertIntoGraph(smoothedScene);
-        HashSet<javaapplication4.Point> usingPoint = pr.Dijkstra(matrixAdj);
-        for(javaapplication4.Point i: usingPoint)
-        {
-            smoothedScene[i.GetZ()][i.GetY()][i.GetX()] = 9998;
-        }   
-        for(int z = 0; z < arr.length; z++)
-            for(int y = 0; y < arr[0].length; y++)
-                for(int x = 0; x < arr[0][0].length; x++)
-                    if(smoothedScene[z][y][x] == 9999)
-                    {
-                        smoothedScene[z][y][x] = 9000;
-                    }
-        DistanceTransformation dt = new DistanceTransformation(smoothedScene); // Здесь Происходит удаление ненужных ветвей
-        
-        Smoothing smoo = new Smoothing();
-        smoo.smooth(smoothedScene);
+//        Skeletonizator sk = new Skeletonizator();
+//        sk.Skeletonization(smoothedScene);
+//        Pruning pr = new Pruning(sk.SizeSkelet(), smoothedScene);
+//        boolean[][] matrixAdj = pr.ConvertIntoGraph(smoothedScene);
+//        HashSet<javaapplication4.Point> usingPoint = pr.Dijkstra(matrixAdj);
+//        for(javaapplication4.Point i: usingPoint)
+//        {
+//            smoothedScene[i.GetZ()][i.GetY()][i.GetX()] = 9998;
+//        }   
+//        for(int z = 0; z < arr.length; z++)
+//            for(int y = 0; y < arr[0].length; y++)
+//                for(int x = 0; x < arr[0][0].length; x++)
+//                    if(smoothedScene[z][y][x] == 9999)
+//                    {
+//                        smoothedScene[z][y][x] = 9000;
+//                    }
+//        DistanceTransformation dt = new DistanceTransformation(smoothedScene); // Здесь Происходит удаление ненужных ветвей
+//        
+//        Smoothing smoo = new Smoothing();
+//        smoo.smooth(smoothedScene);
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         
@@ -290,28 +328,28 @@ public class Ren implements GLEventListener{
         int zl = arr.length / 2;
         int yl = arr[0].length / 2;
         int xl = arr[0][0].length / 2;
-
-        verteces = new ArrayList<Float>();
-        colors = new ArrayList<Float>();
-        
-        //int z = 190;
-        for(int z = 0; z < arr.length; z++)
-            for(int y = 0; y < arr[0].length; y++)
-                for(int x = 0; x < arr[0][0].length; x++)
-                    if(smoothedScene[z][y][x] == 9998)
-                        {
-                           verteces.add(1.0f / xl * (x - xl));
-                           verteces.add(1.0f / yl * (y - yl));
-                           verteces.add(1.0f / zl * (z - zl));
-                           
-//                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
-//                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
-//                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
-                           
-                           colors.add((float)(255.0 / 255.0));
-                           colors.add((float)(255.0 / 255.0));
-                           colors.add((float)(255.0 / 255.0));
-                        }
+//
+//        verteces = new LinkedList<Float>();
+//        colors = new LinkedList<Float>();
+//        
+//        //int z = 190;
+//        for(int z = 0; z < arr.length; z++)
+//            for(int y = 0; y < arr[0].length; y++)
+//                for(int x = 0; x < arr[0][0].length; x++)
+//                    if(smoothedScene[z][y][x] == 9998)
+//                        {
+//                           verteces.add(1.0f / xl * (x - xl));
+//                           verteces.add(1.0f / yl * (y - yl));
+//                           verteces.add(1.0f / zl * (z - zl));
+//                           
+////                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+////                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+////                           colors.add((float)((smoothedScene[z][y][x] + 1024) / 2048.0));
+//                           
+//                           colors.add((float)(255.0 / 255.0));
+//                           colors.add((float)(255.0 / 255.0));
+//                           colors.add((float)(255.0 / 255.0));
+//                        }
         
         //int z = 150;
 //        for(int z = 0; z < arr.length; z++)
@@ -334,81 +372,120 @@ public class Ren implements GLEventListener{
 
         
         
-//        final short BOTTOM_LIMIT = 2000;
-//        final short TOP_LIMIT = 10000;
-//        ArrayList<IVariant> varians = new ArrayList<IVariant>();
-//        varians.add(new Variant0());
-//        varians.add(new Variant1());
-//        
-//        for(int z = 0; z < arr.length - 2; z++)
-//            for(int y = 0; y < arr[0].length - 2; y++)
-//                for(int x = 0; x < arr[0][0].length - 2; x++) {
-//                    String str = "00000000";
-//                    
-//                    short v1 = smoothedScene[z][y][x];
-//                    if(v1 > BOTTOM_LIMIT && v1 < TOP_LIMIT) {
-//                        str = "1" + str.substring(1);
-//                    }
-//                    
-//                    short v2 = smoothedScene[z][y][x + 1];
-//                    if(v2 > BOTTOM_LIMIT && v2 < TOP_LIMIT) {
-//                        str = str.charAt(0) + "1" + str.substring(2);
-//                    }
-//                    
-//                    short v3 = smoothedScene[z][y + 1][x + 1];
-//                    if(v3 > BOTTOM_LIMIT && v3 < TOP_LIMIT) {
-//                        str = str.substring(0,1) + "1" + str.substring(3);
-//                    }
-//                    
-//                    short v4 = smoothedScene[z][y + 1][x];
-//                    if(v3 > BOTTOM_LIMIT && v3 < TOP_LIMIT) {
-//                        str = str.substring(0,2) + "1" + str.substring(4);
-//                    }
-//                    
-//                    short v5 = smoothedScene[z + 1][y][x];
-//                    if(v5 > BOTTOM_LIMIT && v5 < TOP_LIMIT) {
-//                        str = str.substring(0, 3) + "1" + str.substring(5);
-//                    }
-//                    
-//                    short v6 = smoothedScene[z + 1][y][x + 1];
-//                    if(v6 > BOTTOM_LIMIT && v6 < TOP_LIMIT) {
-//                        str = str.substring(0, 4) + "1" + str.substring(6);
-//                    }
-//                    
-//                    short v7 = smoothedScene[z + 1][y + 1][x + 1];
-//                    if(v7 > BOTTOM_LIMIT && v7 < TOP_LIMIT) {
-//                        str = str.substring(0,5) + "1" + str.charAt(7);
-//                    }
-//                    
-//                    short v8 = smoothedScene[z + 1][y + 1][x];
-//                    if(v8 > BOTTOM_LIMIT && v8 < TOP_LIMIT) {
-//                        str = str.substring(0,6) + "1";
-//                    }
-//                    
-//                    Triangle[] polygons = new Triangle[0];
-//                    Triangle[] finalPolygons = new Triangle[0];
-//                    for(IVariant variant : varians) {
-//                        polygons = variant.chose(str, 
-//                                new javaapplication4.Objects.Point(x, y, z, 100));
-//                        System.arraycopy(polygons, 0, finalPolygons, finalPolygons.length, polygons.length);
-//                    }
-//                }
+        final short BOTTOM_LIMIT = 100;
+        final short TOP_LIMIT = 700;
+        Variant1 variant1 = new Variant1();
+        LinkedList<Triangle> polygons = new LinkedList<Triangle>();
+       
+        System.out.println("Begin1");
+        for(int z = 0; z < arr.length - 3; z+=2) {
+            for(int y = 0; y < arr[0].length - 3; y+=2)
+                for(int x = 0; x < arr[0][0].length - 3; x+=2) {
+                    char[] chars = {'0','0','0','0','0','0','0','0'};
+                    
+                    short v1 = arr[z][y][x];
+                    if(v1 > BOTTOM_LIMIT && v1 < TOP_LIMIT) {
+                        chars[0] = '1';
+                    }
+                    
+                    short v2 = arr[z][y][x + 2];
+                    if(v2 > BOTTOM_LIMIT && v2 < TOP_LIMIT) {
+                        chars[1] = '1';
+                    }
+                    
+                    short v3 = arr[z][y + 2][x + 2];
+                    if(v3 > BOTTOM_LIMIT && v3 < TOP_LIMIT) {
+                        chars[2] = '1';
+                    }
+                    
+                    short v4 = arr[z][y + 2][x];
+                    if(v4 > BOTTOM_LIMIT && v4 < TOP_LIMIT) {
+                        chars[3] = '1';
+                    }
+                    
+                    short v5 = arr[z + 2][y][x];
+                    if(v5 > BOTTOM_LIMIT && v5 < TOP_LIMIT) {
+                        chars[4] = '1';
+                    }
+                    
+                    short v6 = arr[z + 2][y][x + 2];
+                    if(v6 > BOTTOM_LIMIT && v6 < TOP_LIMIT) {
+                        chars[5] = '1';
+                    }
+                    
+                    short v7 = arr[z + 2][y + 2][x + 2];
+                    if(v7 > BOTTOM_LIMIT && v7 < TOP_LIMIT) {
+                        chars[6] = '1';
+                    }
+                    
+                    short v8 = arr[z + 2][y + 2][x];
+                    if(v8 > BOTTOM_LIMIT && v8 < TOP_LIMIT) {
+                        chars[7] = '1';
+                    }
+                    
+                    String str = new String(chars);
+                    
+                    
+                    LinkedList<Triangle> cubePolygons = 
+                            variant1.chose(str, new javaapplication4.Objects.Point(x, y, z, 1.0f, 1.0f, 1.0f));
+                    
+                    if(cubePolygons != null && !cubePolygons.isEmpty())
+                        polygons.addAll(cubePolygons);     
+                }
+        }
         
-        
+        verteces = new float[polygons.size() * 9];
+        normals = new float[polygons.size() * 9];
+        colors = new LinkedList<Float>();
+        int index = 0;
+        for (Triangle polygon : polygons) {
+            float x1 = 1.0f / xl * (polygon.getFirst().getX() - xl);
+            float y1 = 1.0f / yl * (polygon.getFirst().getY() - yl);
+            float z1 = 1.0f / zl * (polygon.getFirst().getZ() - zl);
+            float x2 = 1.0f / xl * (polygon.getSecond().getX() - xl);
+            float y2 = 1.0f / yl * (polygon.getSecond().getY() - yl);
+            float z2 = 1.0f / zl * (polygon.getSecond().getZ() - zl);
+            float x3 = 1.0f / xl * (polygon.getThird().getX() - xl);
+            float y3 = 1.0f / yl * (polygon.getThird().getY() - yl);
+            float z3 = 1.0f / zl * (polygon.getThird().getZ() - zl);
+            float b1 = x3 - x1;
+            float b2 = y3 - y1;
+            float b3 = z3 - z1;
+            float a1 = x2 - x1;
+            float a2 = y2 - y1;
+            float a3 = z2 - z1;
+            float n1 = a2 * b3 - a3 * b2;
+            float n2 = a3 * b1 - a1 * b3;
+            float n3 = a1 * b2 - a2 * b1;
+            normals[index] = n1;
+            verteces[index++] = x1;
+            normals[index] = n2;
+            verteces[index++] = y1;
+            normals[index] = n3;
+            verteces[index++] = z1;
+            normals[index] = n1;
+            verteces[index++] = x2;
+            normals[index] = n2;
+            verteces[index++] = y2;
+            normals[index] = n3;
+            verteces[index++] = z2;
+            normals[index] = n1;
+            verteces[index++] = x3;
+            normals[index] = n2;
+            verteces[index++] = y3;
+            normals[index] = n3;
+            verteces[index++] = z3;
+
+        }
          
 
-        vertex_data = Buffers.newDirectFloatBuffer(verteces.size());
-        color_data = Buffers.newDirectFloatBuffer(colors.size());
-
-        for(int i = 0; i < verteces.size(); i++)
-        {
-            vertex_data.put(verteces.get(i));
-            color_data.put(colors.get(i));
-        }
-
+        System.out.println("Begin3");
+        vertex_data = Buffers.newDirectFloatBuffer(verteces);
+        normal_data = Buffers.newDirectFloatBuffer(normals);
 
         vertex_data.rewind();
-        color_data.rewind();
+        normal_data.rewind();
+        
          
          
         final GLProfile profile = GLProfile.get(GLProfile.GL2);

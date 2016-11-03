@@ -5,7 +5,9 @@ public class Point {
     private float X;
     private float Y;
     private float Z;
-    private float Color;
+    private float ColorR;
+    private float ColorG;
+    private float ColorB;
     
     public float getX(){
         return X;
@@ -19,8 +21,16 @@ public class Point {
         return Z;
     }
     
-    public float getColor(){
-        return Color;
+    public float getColorR(){
+        return ColorR;
+    }
+    
+    public float getColorG(){
+        return ColorG;
+    }
+    
+    public float getColorB(){
+        return ColorB;
     }
     
     public void setX(float x){
@@ -33,14 +43,24 @@ public class Point {
         Z = z;
     }
     
-    public void setColor(float color){
-        Z = color;
+    public void setColorR(float colorR){
+        this.ColorR = colorR;
     }
     
-    public Point(float x, float y, float z, float color){
+    public void setColorG(float colorG){
+        this.ColorG = colorG;
+    }
+    
+    public void setColorB(float colorB){
+        this.ColorB = colorB;
+    }
+    
+    public Point(float x, float y, float z, float colorR, float colorG, float colorB){
         setX(x);
         setY(y);
         setZ(z);
-        setColor(color);
+        setColorR(colorR);
+        setColorG(colorG);
+        setColorB(colorB);
     }
 }
