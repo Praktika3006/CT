@@ -1,27 +1,37 @@
 package javaapplication4.marchingCubes;
+import java.util.LinkedList;
 import javaapplication4.Objects.*;
 
 /**
  *
  * @author Dima
  */
-public class Variant0 implements IVariant{
-
-    @Override
-    public Triangle[] chose(String string, Point point0) {
+public class Variant0 {
+    private Point vertex0;
+    
+    public LinkedList<Triangle> chose(String string, Point point0) {
+        this.vertex0 = point0;
+        LinkedList<Triangle> tr = null;
         switch(string){
-            case"00000000": return Variant0_1();
-            default: return Variant0_2();
+            case "00000000": 
+                tr = Variant0_1();
+                break;
+            case "11111111": 
+                tr = Variant0_2();
+                break;
         }
+        return tr;
     }
     
-    private Triangle[] Variant0_1()
+    private LinkedList<Triangle> Variant0_1()
     {
-        return new Triangle[0];
+        LinkedList<Triangle> tr = new LinkedList<Triangle>();
+        return tr;
     }
     
-    private Triangle[] Variant0_2()
+    private LinkedList<Triangle> Variant0_2()
     {
-        return new Triangle[0];
+        LinkedList<Triangle> tr = new LinkedList<Triangle>();
+        return tr;
     }
 }

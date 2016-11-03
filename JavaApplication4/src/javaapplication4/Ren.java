@@ -372,9 +372,11 @@ public class Ren implements GLEventListener{
 
         
         
-        final short BOTTOM_LIMIT = 100;
-        final short TOP_LIMIT = 700;
+        final short BOTTOM_LIMIT = 250;
+        final short TOP_LIMIT = 2048;
+        Variant0 variant0 = new Variant0();
         Variant1 variant1 = new Variant1();
+        Variant2 variant2 = new Variant2();
         LinkedList<Triangle> polygons = new LinkedList<Triangle>();
        
         System.out.println("Begin1");
@@ -425,12 +427,22 @@ public class Ren implements GLEventListener{
                     
                     String str = new String(chars);
                     
-                    
                     LinkedList<Triangle> cubePolygons = 
-                            variant1.chose(str, new javaapplication4.Objects.Point(x, y, z, 1.0f, 1.0f, 1.0f));
+                            variant0.chose(str, new javaapplication4.Objects.Point(x, y, z, 1.0f, 1.0f, 1.0f));
                     
-                    if(cubePolygons != null && !cubePolygons.isEmpty())
-                        polygons.addAll(cubePolygons);     
+                    cubePolygons = 
+                            variant1.chose(str, new javaapplication4.Objects.Point(x, y, z, 1.0f, 1.0f, 1.0f));
+                    if(cubePolygons != null && !cubePolygons.isEmpty()) {
+                        polygons.addAll(cubePolygons);
+                        continue;
+                    }
+                    
+                    cubePolygons = 
+                            variant2.chose(str, new javaapplication4.Objects.Point(x, y, z, 1.0f, 1.0f, 1.0f));
+                    if(cubePolygons != null && !cubePolygons.isEmpty()) {
+                        polygons.addAll(cubePolygons);
+                        continue;
+                    }
                 }
         }
         
