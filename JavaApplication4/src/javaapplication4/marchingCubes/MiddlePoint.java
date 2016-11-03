@@ -7,10 +7,10 @@ import javaapplication4.Objects.*;
  */
 public class MiddlePoint {
     
-    private static final float StepX = 2.0f;
-    private static final float StepY = 2.0f;
-    private static final float StepZ = 2.0f;
-    private static final float Middle = 1.0f;
+    private static final float StepX = 1.0f;
+    private static final float StepY = 1.0f;
+    private static final float StepZ = 1.0f;
+    private static final float Middle = 0.5f;
     private Point Vertex;
     
     public Point getVrtex()

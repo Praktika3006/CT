@@ -378,9 +378,9 @@ public class Ren implements GLEventListener{
         LinkedList<Triangle> polygons = new LinkedList<Triangle>();
        
         System.out.println("Begin1");
-        for(int z = 0; z < arr.length - 3; z+=2) {
-            for(int y = 0; y < arr[0].length - 3; y+=2)
-                for(int x = 0; x < arr[0][0].length - 3; x+=2) {
+        for(int z = 0; z < arr.length - 2; z++) {
+            for(int y = 0; y < arr[0].length - 2; y++)
+                for(int x = 0; x < arr[0][0].length - 2; x++) {
                     char[] chars = {'0','0','0','0','0','0','0','0'};
                     
                     short v1 = arr[z][y][x];
@@ -388,37 +388,37 @@ public class Ren implements GLEventListener{
                         chars[0] = '1';
                     }
                     
-                    short v2 = arr[z][y][x + 2];
+                    short v2 = arr[z][y][x + 1];
                     if(v2 > BOTTOM_LIMIT && v2 < TOP_LIMIT) {
                         chars[1] = '1';
                     }
                     
-                    short v3 = arr[z][y + 2][x + 2];
+                    short v3 = arr[z][y + 1][x + 1];
                     if(v3 > BOTTOM_LIMIT && v3 < TOP_LIMIT) {
                         chars[2] = '1';
                     }
                     
-                    short v4 = arr[z][y + 2][x];
+                    short v4 = arr[z][y + 1][x];
                     if(v4 > BOTTOM_LIMIT && v4 < TOP_LIMIT) {
                         chars[3] = '1';
                     }
                     
-                    short v5 = arr[z + 2][y][x];
+                    short v5 = arr[z + 1][y][x];
                     if(v5 > BOTTOM_LIMIT && v5 < TOP_LIMIT) {
                         chars[4] = '1';
                     }
                     
-                    short v6 = arr[z + 2][y][x + 2];
+                    short v6 = arr[z + 1][y][x + 1];
                     if(v6 > BOTTOM_LIMIT && v6 < TOP_LIMIT) {
                         chars[5] = '1';
                     }
                     
-                    short v7 = arr[z + 2][y + 2][x + 2];
+                    short v7 = arr[z + 1][y + 1][x + 1];
                     if(v7 > BOTTOM_LIMIT && v7 < TOP_LIMIT) {
                         chars[6] = '1';
                     }
                     
-                    short v8 = arr[z + 2][y + 2][x];
+                    short v8 = arr[z + 1][y + 1][x];
                     if(v8 > BOTTOM_LIMIT && v8 < TOP_LIMIT) {
                         chars[7] = '1';
                     }
